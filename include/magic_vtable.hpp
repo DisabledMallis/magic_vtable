@@ -1,45 +1,62 @@
 #pragma once
 
-#ifndef CONSTEXPR_VTABLE_LIB
-#define CONSTEXPR_VTABLE_LIB
+#ifndef MAGIC_VTABLE_LIB
+#define MAGIC_VTABLE_LIB
 
-#include <charconv>
-#include <optional>
-#include <string>
+#if defined(_MSC_VER) && defined(__clang__)
+	#define MAGIC_VTABLE_CLANG_CL
+	#define MAGIC_VTABLE_PREFIX std::string_view{"@@$"}
+	#define MAGIC_VTABLE_SUFFIX std::string_view{"@@"}
+#elif defined(_MSC_VER)
+	#define MAGIC_VTABLE_MSVC
+	#define MAGIC_VTABLE_PREFIX std::string_view{"1@$"}
+	#define MAGIC_VTABLE_SUFFIX std::string_view{"@@"}
+#else
+	#error "Unsupported compiler"
+#endif
+
+#include <string_view>
 
 namespace magic_vft
 {
-	template<auto func>
-	constexpr std::optional<size_t> vtable_index_msvc()
+	namespace detail
 	{
-		constexpr std::string_view match = "::`vcall'{";
-		constexpr std::string_view fstr = __FUNCSIG__;
-		constexpr auto pos = fstr.find("::`vcall'{");
-		static_assert(pos != std::string::npos, "'func' is not a virtual function");
+		consteval size_t decode_microsoft_value(std::string_view str)
+		{
+			// weird cases that i'm not sure how to handle
+			if (str.starts_with("B3A"))
+				return 4;
+			if (str.starts_with("B7A"))
+				return 8;
 
-		std::string_view offset_str = fstr.substr(pos);
-		auto terminate = offset_str.find('}');
-		if (terminate == std::string::npos)
-			return std::nullopt;
+			// Skip the leading 'B'
+			if (str.front() != 'B')
+			{
+				// invoke UB to stop constexpr evaluation
+				std::unreachable();
+			}
+			str.remove_prefix(1);
 
-		offset_str = offset_str.substr(match.size(), terminate);
-
-		size_t offset;
-		auto result = std::from_chars(offset_str.data(), offset_str.data() + offset_str.size(), offset);
-
-		if (result.ec == std::errc{})
-			return offset / sizeof(size_t);
-
-		return std::nullopt;
+			size_t value{};
+			while (!str.empty() && str.front() != '@')
+			{
+				value *= 16;
+				value += str.front() - 'A';
+				str.remove_prefix(1);
+			}
+			return value;
+		}
 	}
 
-	template<auto func>
-	constexpr std::optional<size_t> vtable_index()
+	template<auto>
+	consteval size_t vtable_index()
 	{
-#if _MSC_VER && !__INTEL_COMPILER
-		return vtable_index_msvc<func>();
-#endif
+		constexpr std::string_view mangled{__FUNCDNAME__};
+		constexpr auto first = mangled.find(MAGIC_VTABLE_PREFIX) + MAGIC_VTABLE_PREFIX.size();
+		constexpr auto last = mangled.find(MAGIC_VTABLE_SUFFIX, first);
+		constexpr auto value = detail::decode_microsoft_value(mangled.substr(first, last - first));
+		return value / sizeof(size_t);
 	}
 }
 
-#endif
+#endif // MAGIC_VTABLE_LIB

@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 23)
 add_library(constexpr_vtable INTERFACE)
 target_include_directories(constexpr_vtable INTERFACE ${CMAKE_CURRENT_LIST_DIR}/include)
 
-option(BUILD_CVFT_TESTS "Build tests" ON)
+option(BUILD_CVFT_TESTS "Build tests" OFF)
 if(BUILD_CVFT_TESTS)
     add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/test)
 endif ()

@@ -11,12 +11,16 @@ struct TestClass
 	void non_virtual() {}
 };
 
+static_assert(magic_vft::vtable_index<&TestClass::a>() == 0);
+static_assert(magic_vft::vtable_index<&TestClass::b>() == 1);
+static_assert(magic_vft::vtable_index<&TestClass::c>() == 2);
+
 int main()
 {
-	//Find the index at compile time
+	// Find the index at compile time
 	constexpr auto index = magic_vft::vtable_index<&TestClass::c>();
-	std::cout << index.value() << std::endl;
+	std::cout << index << std::endl;
 
-	//Retrieve the index at runtime
-	std::cout << magic_vft::vtable_index<&TestClass::b>().value() << std::endl;
+	// Retrieve the index at runtime
+	std::cout << magic_vft::vtable_index<&TestClass::b>() << std::endl;
 }

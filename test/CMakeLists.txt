@@ -1,0 +1,2 @@
+add_executable(cvft_tests test.cpp)
+target_link_libraries(cvft_tests PUBLIC constexpr_vtable)

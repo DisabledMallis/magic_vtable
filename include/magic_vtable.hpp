@@ -21,6 +21,15 @@ namespace magic_vft
 {
 	namespace detail
 	{
+		consteval uint8_t parse_alphabet_encoded_hex(const char ch)
+		{
+			if (ch < 'A' || ch >= 'A' + 16)
+			{
+				std::unreachable();
+			}
+			return static_cast<uint8_t>(ch - 'A');
+		}
+
 		consteval size_t decode_microsoft_value(std::string_view str)
 		{
 			// weird cases that i'm not sure how to handle
@@ -41,7 +50,7 @@ namespace magic_vft
 			while (!str.empty() && str.front() != '@')
 			{
 				value *= 16;
-				value += str.front() - 'A';
+				value += parse_alphabet_encoded_hex(str.front());
 				str.remove_prefix(1);
 			}
 			return value;

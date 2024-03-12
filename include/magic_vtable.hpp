@@ -16,6 +16,7 @@
 #endif
 
 #include <string_view>
+#include <utility>
 
 namespace magic_vft
 {

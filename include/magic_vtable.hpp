@@ -3,14 +3,18 @@
 #ifndef MAGIC_VTABLE_LIB
 #define MAGIC_VTABLE_LIB
 
-#if defined(_MSC_VER) && defined(__clang__)
-	#define MAGIC_VTABLE_CLANG_CL
-	#define MAGIC_VTABLE_PREFIX std::string_view{"@@$"}
-	#define MAGIC_VTABLE_SUFFIX std::string_view{"@@"}
-#elif defined(_MSC_VER)
-	#define MAGIC_VTABLE_MSVC
-	#define MAGIC_VTABLE_PREFIX std::string_view{"1@$"}
-	#define MAGIC_VTABLE_SUFFIX std::string_view{"@@"}
+#if defined(_MSC_VER)
+	// Prior to Clang 19.1.0, mangling of functions with NTTP member pointers was incompatible with MSVC 19.20+:
+	// https://releases.llvm.org/19.1.0/tools/clang/docs/ReleaseNotes.html#abi-changes-in-this-version
+	#if (_MSC_VER < 1920) || (defined(__clang__) && __clang_major__ < 19)
+		#define MAGIC_VTABLE_CLANG_CL
+		#define MAGIC_VTABLE_PREFIX std::string_view{"@@$"}
+		#define MAGIC_VTABLE_SUFFIX std::string_view{"@@"}
+	#else
+		#define MAGIC_VTABLE_MSVC
+		#define MAGIC_VTABLE_PREFIX std::string_view{"1@$"}
+		#define MAGIC_VTABLE_SUFFIX std::string_view{"@@"}
+	#endif
 #else
 	#error "Unsupported compiler"
 #endif
